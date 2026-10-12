@@ -1,0 +1,19 @@
+name: ai-engine
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: ai_engine
+      POSTGRES_PASSWORD: ai_engine_local
+      POSTGRES_DB: ai_engine
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_engine -d ai_engine"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  postgres_data:

@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "id": "station-repair",
+    "name": "空间站维修",
+    "description": "用另一题材验证通用引擎。"
+  },
+  "world": {
+    "background": "空间站受损，工程师等待能源供应。",
+    "start_time": "任务第一日",
+    "turn_unit": "一小时",
+    "constraints": []
+  },
+  "entities": {
+    "characters": [
+      {
+        "id": "commander",
+        "name": "指挥官",
+        "faction_id": null,
+        "description": "",
+        "personality": [],
+        "goals": [],
+        "relationships": []
+      },
+      {
+        "id": "engineer",
+        "name": "工程师",
+        "faction_id": null,
+        "description": "",
+        "personality": [],
+        "goals": [],
+        "relationships": []
+      }
+    ],
+    "factions": [],
+    "locations": []
+  },
+  "player": {
+    "character_id": "commander"
+  },
+  "state_schema": [
+    {
+      "key": "reserve",
+      "label": "能源储备",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 100,
+      "unit": "能源点",
+      "visibility": "public"
+    },
+    {
+      "key": "repair-energy",
+      "label": "维修能源",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 100,
+      "unit": "能源点",
+      "visibility": "public"
+    },
+    {
+      "key": "spent",
+      "label": "消耗能源",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 100,
+      "unit": "能源点",
+      "visibility": "public"
+    },
+    {
+      "key": "integrity",
+      "label": "空间站完整度",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "visibility": "public"
+    }
+  ],
+  "initial_state": {
+    "values": {
+      "reserve": 30,
+      "repair-energy": 0,
+      "spent": 0,
+      "integrity": 0
+    },
+    "memories": []
+  },
+  "actions": [
+    {
+      "id": "allocate",
+      "name": "分配能源",
+      "description": "",
+      "allowed_actor_ids": [
+        "commander"
+      ],
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "reserve",
+          "to_field": "repair-energy",
+          "amount": {
+            "parameter": "amount"
+          }
+        }
+      ],
+      "conditions": {
+        "all": []
+      },
+      "parameters": {
+        "amount": {
+          "type": "integer",
+          "min": 1,
+          "max": 30
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "wait",
+      "name": "等待",
+      "description": "",
+      "allowed_actor_ids": [
+        "commander"
+      ],
+      "effects": [],
+      "conditions": {
+        "all": []
+      },
+      "parameters": {},
+      "visibility": "public"
+    },
+    {
+      "id": "repair",
+      "name": "维修",
+      "description": "",
+      "allowed_actor_ids": [
+        "engineer"
+      ],
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "repair-energy",
+          "to_field": "spent",
+          "amount": {
+            "literal": 10
+          }
+        },
+        {
+          "type": "add",
+          "field": "integrity",
+          "value": {
+            "literal": 40
+          }
+        }
+      ],
+      "conditions": {
+        "all": [
+          {
+            "operator": "gte",
+            "left": {
+              "field": "repair-energy"
+            },
+            "right": {
+              "literal": 10
+            }
+          },
+          {
+            "operator": "lte",
+            "left": {
+              "field": "integrity"
+            },
+            "right": {
+              "literal": 60
+            }
+          }
+        ]
+      },
+      "parameters": {},
+      "visibility": "public"
+    }
+  ],
+  "simulation": {
+    "npc_order": [
+      "engineer"
+    ],
+    "npc_actions": {
+      "engineer": [
+        {
+          "action_id": "repair",
+          "parameters": {}
+        }
+      ]
+    },
+    "memory_recent_turns": 3
+  },
+  "events": [],
+  "objectives": [
+    {
+      "id": "repaired",
+      "name": "维修完成",
+      "outcome": "success",
+      "priority": 0,
+      "conditions": {
+        "operator": "gte",
+        "left": {
+          "field": "integrity"
+        },
+        "right": {
+          "literal": 80
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "timeout",
+      "name": "救援窗口关闭",
+      "outcome": "failure",
+      "priority": 10,
+      "conditions": {
+        "operator": "gte",
+        "left": {
+          "turn": true
+        },
+        "right": {
+          "literal": 4
+        }
+      },
+      "visibility": "public"
+    }
+  ],
+  "narrative": {
+    "opening": "工程师请求能源，维修窗口只有四小时。",
+    "style": "任务报告",
+    "perspective": "指挥官"
+  }
+}

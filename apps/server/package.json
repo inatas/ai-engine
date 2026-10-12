@@ -1,0 +1,29 @@
+{
+  "name": "@ai-engine/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --import tsx src/main.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:verify": "tsx src/verify-database.ts"
+  },
+  "dependencies": {
+    "@ai-engine/contracts": "workspace:*",
+    "@ai-engine/engine": "workspace:*",
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/platform-express": "11.1.6",
+    "@prisma/client": "7.10.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "argon2": "0.45.1",
+    "cookie": "2.0.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": { "tsx": "4.20.6", "prisma": "7.10.0", "@types/express": "5.0.6" }
+}

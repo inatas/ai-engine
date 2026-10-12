@@ -1,0 +1,8 @@
+body { margin: 0; background: #f4f5ef; color: #23372e; }
+.workshop { min-height: 100vh; background: #f4f5ef; }
+.workshop .ant-layout-header { height: auto; padding: 22px 6vw; display: flex; align-items: center; justify-content: space-between; background: white; border-bottom: 1px solid #e0e6dc; }
+.workshop .ant-layout-header h3 { margin: 0; }
+.workshop .ant-layout-content { max-width: 1120px; width: 100%; margin: auto; padding: 64px 6vw; }
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.identity-card { max-width: 580px; }
+@media (max-width: 600px) { .cards { grid-template-columns: 1fr; } .workshop .ant-layout-content { padding-top: 32px; } }

@@ -1,0 +1,30 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: ai_engine
+          POSTGRES_PASSWORD: ai_engine_local
+          POSTGRES_DB: ai_engine
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U ai_engine -d ai_engine"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm db:push
+      - run: pnpm db:verify
+      - run: pnpm check
+      - run: pnpm test

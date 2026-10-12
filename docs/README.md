@@ -1,33 +1,34 @@
-# 全局技术文档
+# 全局设计索引
 
-更新日期：2026-10-12。本文档集描述当前设计；目前尚未实现程序。
+本文档集维护当前项目设计，项目约束见 [AGENTS.md](../AGENTS.md)。架构描述领域关系，各专题维护一份权威规范；开发项和实际结果在 note，依赖版本与启动方式见根 README。
 
-项目规范以根目录 [AGENTS.md](../AGENTS.md) 为准。`docs/` 维护全局技术架构，`note/` 记录每次迭代的开发项与结果，两者与实现同步更新。
+## 1. 文档职责
 
-## 阅读顺序
-
-| 文档 | 维护内容 |
+| 文档 | 唯一维护内容 |
 | --- | --- |
-| [architecture.md](architecture.md) | 项目目标、world engine 与剧本边界、模块与数据职责 |
-| [technical-stack.md](technical-stack.md) | 全 TypeScript 技术选型、包依赖、lint／CI 强制边界与存档版本 |
-| [scenario-schema.md](scenario-schema.md) | 完整世界定义包的结构、规则表达、作者流程与校验 |
-| [scenario-editor.md](scenario-editor.md) | 专业编辑器、个人草稿、错误定位、试玩与定稿 |
-| [runtime.md](runtime.md) | 回合推进、事实与记忆、提交、保存恢复与叙述 |
-| [identity-and-saves.md](identity-and-saves.md) | 用户鉴权、数据归属、个人存档保存／读取与恢复 |
-| [api-contract.md](api-contract.md) | 首期接口、输入输出、错误响应、去重与并发约定 |
+| [architecture.md](architecture.md) | 产品边界、三个业务域、数据所有者和域间协作 |
+| [technical-stack.md](technical-stack.md) | 工程组织、技术方案、依赖与纯计算边界、构建门禁 |
+| [scenario-schema.md](scenario-schema.md) | 引擎输入 DSL、类型、规则节点与定义校验 |
+| [runtime.md](runtime.md) | 初始化、行动／NPC／事件／目标结算、角色知识和可见反馈 |
+| [personal-saves.md](personal-saves.md) | 世界检查点、版本、持久化事务、继续与恢复 |
+| [auth-and-ownership.md](auth-and-ownership.md) | 认证、会话、CSRF／限流及统一访问原则 |
+| [scenario-editor.md](scenario-editor.md) | 创作工作区、全部领域控件、编辑／保存／校验／试玩／定稿交互 |
+| [api-contract.md](api-contract.md) | HTTP 接口形状、通用响应、请求去重和冲突语义 |
+| [custom-scenarios.md](custom-scenarios.md) | 基于编辑器制作的大明与空间站示例内容、操作路径及验收 |
 
-## 关联实施项
+## 2. 开发项与状态
 
-- [首期：专业剧本编辑器、用户鉴权与个人存档闭环](../note/001-world-engine-foundation.md)：落实本次全局设计，状态为待实施。开发任务、执行顺序和验收结果在该 note 中维护。
+| 开发项 | 范围 | 当前状态 |
+| --- | --- | --- |
+| [001 世界引擎与个人存档](../note/001-world-engine-foundation.md) | DSL／定义校验、通用执行、工程、游戏应用及存档 | 实施中，核心基础已有，业务尚未完成 |
+| [002 账号鉴权与数据归属](../note/002-auth-and-ownership.md) | 身份上下文、认证防护、访问约定与身份界面 | 已实现；78 项检查及浏览器身份／重启链路通过 |
+| [003 专业剧本编辑器](../note/003-scenario-editor.md) | 创作域全部草稿／模板／定稿服务、领域控件和作者试玩流程 | 设计待确认，功能未实现 |
+| [004 基于编辑器的示例剧本](../note/004-custom-scenarios.md) | 使用 003 制作、导出与运行两个具体 example | 待确认，依赖 003；既有 JSON 只作内容参考和规则夹具 |
 
-首期目标：作者可通过专业编辑器初始化完整世界；玩家经过鉴权可保存、列出、读取和恢复本人存档。本轮仍只交付 docs/note，不将设计完成标为功能完成。
+依赖顺序：001 已有核心供创作调用，002 提供身份，003 提供完整创作工作流，004 用工作流制作用例；运行应用与创作接口接通后联合验收首期保存恢复。003 不等待 001 全部存档功能完成，但 004 的完成必须有 003 实际浏览器证据。
 
-## 额外参考
+## 3. 阅读与更新
 
-[AI Dungeon 产品参考](research/ai-dungeon-review.md)仅保存研究结论与未采纳想法，不属于上述技术规范或实施计划；参考差异不自动扩大项目范围。
+先读架构和技术方案，再按所属领域读专题及开发 note。一个规则只有一个规范来源，其他文档保留关联说明。完成状态依据实际功能与验收，已有 schema、表结构或 JSON 不能代替编辑器、身份或端到端完成证据。
 
-## 更新约定
-
-全局文档只保留当前有效约定，不保留多套版本以供兼容。字段、接口、日志或存储设计调整时，直接更新相关文档和开发项，旧格式不要求继续可用。
-
-此次文档替代原 `design-v0.1.md`，统一采用“剧本是完整世界定义包”的含义。WorldOS 仅是讨论中的产品参考，未核实其内部实现；此处描述的是本项目设计。
+[AI Dungeon 研究](research/ai-dungeon-review.md)是额外参考，不是当前需求或域划分依据。

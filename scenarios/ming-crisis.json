@@ -1,0 +1,456 @@
+{
+  "metadata": {
+    "id": "ming-crisis",
+    "name": "大明末年危局",
+    "description": "机制验证局势，数值不对应真实历史财政或兵力。"
+  },
+  "world": {
+    "background": "军饷与赈济同时告急。你需要分配有限的资金，维持前线忠诚。",
+    "start_time": "1643 年",
+    "turn_unit": "一周",
+    "constraints": [
+      "仅作为规则验证，不代表完整历史模拟。"
+    ]
+  },
+  "entities": {
+    "characters": [
+      {
+        "id": "emperor",
+        "name": "皇帝",
+        "faction_id": "court",
+        "description": "",
+        "personality": [],
+        "goals": [],
+        "relationships": []
+      },
+      {
+        "id": "treasurer",
+        "name": "财政官",
+        "faction_id": "court",
+        "description": "",
+        "personality": [],
+        "goals": [],
+        "relationships": []
+      },
+      {
+        "id": "general",
+        "name": "前线将领",
+        "faction_id": "court",
+        "description": "",
+        "personality": [],
+        "goals": [],
+        "relationships": []
+      }
+    ],
+    "factions": [
+      {
+        "id": "court",
+        "name": "朝廷",
+        "description": "",
+        "goals": []
+      },
+      {
+        "id": "enemy",
+        "name": "敌对阵营",
+        "description": "",
+        "goals": []
+      }
+    ],
+    "locations": [
+      {
+        "id": "beijing",
+        "name": "北京",
+        "description": ""
+      },
+      {
+        "id": "front",
+        "name": "前线",
+        "description": ""
+      }
+    ]
+  },
+  "player": {
+    "character_id": "emperor"
+  },
+  "state_schema": [
+    {
+      "key": "treasury",
+      "label": "国库",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 1000,
+      "unit": "财政点",
+      "visibility": "public"
+    },
+    {
+      "key": "payroll",
+      "label": "前线军饷",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 1000,
+      "unit": "财政点",
+      "visibility": "public"
+    },
+    {
+      "key": "spent",
+      "label": "已用军费",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 1000,
+      "unit": "财政点",
+      "visibility": "public"
+    },
+    {
+      "key": "relief",
+      "label": "赈济资金",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 1000,
+      "unit": "财政点",
+      "visibility": "public"
+    },
+    {
+      "key": "loyalty",
+      "label": "军队忠诚",
+      "type": "integer",
+      "owner_id": null,
+      "min": 0,
+      "max": 100,
+      "unit": null,
+      "visibility": "public"
+    },
+    {
+      "key": "controller",
+      "label": "北京控制者",
+      "type": "entity_ref",
+      "owner_id": "beijing",
+      "allowed_entity_ids": [
+        "court",
+        "enemy"
+      ],
+      "visibility": "public"
+    }
+  ],
+  "initial_state": {
+    "values": {
+      "treasury": 100,
+      "payroll": 0,
+      "spent": 0,
+      "relief": 0,
+      "loyalty": 50,
+      "controller": "court"
+    },
+    "memories": [
+      {
+        "id": "requests",
+        "text": "军饷与赈济同时申请拨款。",
+        "audience": "public"
+      },
+      {
+        "id": "private-worry",
+        "text": "前线将领担忧部下哗变。",
+        "audience": [
+          "general"
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "fund-payroll",
+      "name": "调拨军饷",
+      "description": "",
+      "allowed_actor_ids": [
+        "emperor"
+      ],
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "treasury",
+          "to_field": "payroll",
+          "amount": {
+            "parameter": "amount"
+          }
+        }
+      ],
+      "conditions": {
+        "all": []
+      },
+      "parameters": {
+        "amount": {
+          "type": "integer",
+          "min": 1,
+          "max": 100
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "fund-relief",
+      "name": "拨款赈济",
+      "description": "",
+      "allowed_actor_ids": [
+        "emperor"
+      ],
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "treasury",
+          "to_field": "relief",
+          "amount": {
+            "parameter": "amount"
+          }
+        }
+      ],
+      "conditions": {
+        "all": []
+      },
+      "parameters": {
+        "amount": {
+          "type": "integer",
+          "min": 1,
+          "max": 100
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "wait",
+      "name": "等待",
+      "description": "",
+      "allowed_actor_ids": [
+        "emperor"
+      ],
+      "effects": [],
+      "conditions": {
+        "all": []
+      },
+      "parameters": {},
+      "visibility": "public"
+    },
+    {
+      "id": "npc-relief",
+      "name": "财政官拨付赈济",
+      "description": "",
+      "allowed_actor_ids": [
+        "treasurer"
+      ],
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "treasury",
+          "to_field": "relief",
+          "amount": {
+            "literal": 10
+          }
+        }
+      ],
+      "conditions": {
+        "all": [
+          {
+            "operator": "gte",
+            "left": {
+              "field": "treasury"
+            },
+            "right": {
+              "literal": 10
+            }
+          },
+          {
+            "operator": "lt",
+            "left": {
+              "field": "relief"
+            },
+            "right": {
+              "literal": 30
+            }
+          }
+        ]
+      },
+      "parameters": {},
+      "visibility": "public"
+    }
+  ],
+  "simulation": {
+    "npc_order": [
+      "treasurer",
+      "general"
+    ],
+    "npc_actions": {
+      "treasurer": [
+        {
+          "action_id": "npc-relief",
+          "parameters": {}
+        }
+      ],
+      "general": []
+    },
+    "memory_recent_turns": 4
+  },
+  "events": [
+    {
+      "id": "arrears",
+      "name": "欠饷",
+      "conditions": {
+        "all": [
+          {
+            "operator": "lt",
+            "left": {
+              "field": "payroll"
+            },
+            "right": {
+              "literal": 10
+            }
+          },
+          {
+            "operator": "gte",
+            "left": {
+              "field": "loyalty"
+            },
+            "right": {
+              "literal": 5
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "add",
+          "field": "loyalty",
+          "value": {
+            "literal": -5
+          }
+        }
+      ],
+      "repeatable": true,
+      "visibility": "public"
+    },
+    {
+      "id": "payment",
+      "name": "支付军饷",
+      "conditions": {
+        "operator": "gte",
+        "left": {
+          "field": "payroll"
+        },
+        "right": {
+          "literal": 10
+        }
+      },
+      "effects": [
+        {
+          "type": "transfer",
+          "from_field": "payroll",
+          "to_field": "spent",
+          "amount": {
+            "literal": 10
+          }
+        }
+      ],
+      "repeatable": true,
+      "visibility": "public"
+    },
+    {
+      "id": "fall",
+      "name": "北京失守",
+      "conditions": {
+        "all": [
+          {
+            "operator": "gte",
+            "left": {
+              "turn": true
+            },
+            "right": {
+              "literal": 8
+            }
+          },
+          {
+            "operator": "lt",
+            "left": {
+              "field": "loyalty"
+            },
+            "right": {
+              "literal": 40
+            }
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set",
+          "field": "controller",
+          "value": {
+            "literal": "enemy"
+          }
+        }
+      ],
+      "repeatable": false,
+      "visibility": "public"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "defeat",
+      "name": "北京失守",
+      "outcome": "failure",
+      "priority": 0,
+      "conditions": {
+        "operator": "eq",
+        "left": {
+          "field": "controller"
+        },
+        "right": {
+          "literal": "enemy"
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "survive",
+      "name": "度过危局",
+      "outcome": "success",
+      "priority": 10,
+      "conditions": {
+        "all": [
+          {
+            "operator": "gte",
+            "left": {
+              "turn": true
+            },
+            "right": {
+              "literal": 12
+            }
+          },
+          {
+            "operator": "eq",
+            "left": {
+              "field": "controller"
+            },
+            "right": {
+              "literal": "court"
+            }
+          },
+          {
+            "operator": "gte",
+            "left": {
+              "field": "loyalty"
+            },
+            "right": {
+              "literal": 40
+            }
+          }
+        ]
+      },
+      "visibility": "public"
+    }
+  ],
+  "narrative": {
+    "opening": "军饷与赈济的奏报摆在案前，国库只剩一百财政点。",
+    "style": "简洁、结构化",
+    "perspective": "皇帝"
+  }
+}

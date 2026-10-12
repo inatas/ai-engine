@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  '@nestjs/core': false
+  esbuild: true
+  prisma: true
+  '@prisma/engines': true
+  argon2: true
+saveExact: true
+strictPeerDependencies: true

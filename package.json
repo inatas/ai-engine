@@ -1,0 +1,26 @@
+{
+  "name": "ai-engine",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": { "node": ">=24.19.0 <25" },
+  "scripts": {
+    "setup:local": "node scripts/setup-local.mjs",
+    "dev": "pnpm --filter @ai-engine/contracts build && pnpm --filter @ai-engine/engine build && pnpm db:generate && pnpm --parallel --filter @ai-engine/web --filter @ai-engine/server dev",
+    "build": "pnpm -r build",
+    "check": "eslint . && node scripts/check-boundaries.mjs && pnpm -r typecheck",
+    "test": "vitest run && pnpm test:auth",
+    "test:auth": "pnpm --filter @ai-engine/contracts build && pnpm --filter @ai-engine/server build && node scripts/test-auth.mjs",
+    "db:up": "docker compose up -d --wait",
+    "db:generate": "pnpm --filter @ai-engine/server db:generate",
+    "db:push": "pnpm --filter @ai-engine/server db:push",
+    "db:verify": "pnpm --filter @ai-engine/server db:verify",
+    "db:stop": "docker compose stop"
+  },
+  "devDependencies": {
+    "eslint": "10.12.0",
+    "typescript-eslint": "8.71.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4",
+    "@types/node": "24.10.1"
+  }
+}

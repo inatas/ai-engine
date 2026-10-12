@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  moduleFormat = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id String @id @default(uuid())
+  username String @unique
+  passwordHash String
+  createdAt DateTime @default(now())
+  authSessions AuthSession[]
+  drafts ScenarioDraft[]
+  releases ScenarioRelease[]
+  worlds WorldSession[]
+  saves SaveGame[]
+  requests ProcessedRequest[]
+}
+
+model AuthSession {
+  id String @id @default(uuid())
+  tokenHash String @unique
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csrfHash String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  lastSeenAt DateTime
+  revokedAt DateTime?
+  @@index([userId])
+}
+
+model AnonymousAuthContext {
+  tokenHash String @id
+  csrfHash String
+  expiresAt DateTime
+}
+
+model AuthRateLimit {
+  key String @id
+  attempts DateTime[]
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+model AuthSecurityState {
+  id String @id
+  csrfSecretHash String
+}
+
+model ScenarioDraft {
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  name String
+  document Json @db.JsonB
+  revision BigInt @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  releases ScenarioRelease[]
+  @@index([ownerUserId, updatedAt])
+}
+
+model ScenarioRelease {
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceDraftId String
+  sourceDraft ScenarioDraft @relation(fields: [sourceDraftId], references: [id])
+  sourceRevision BigInt
+  name String
+  definition Json @db.JsonB
+  createdAt DateTime @default(now())
+  @@index([ownerUserId, createdAt])
+}
+
+model WorldSession {
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  mode String
+  name String
+  schemaVersion BigInt
+  revision BigInt @default(0)
+  turn BigInt
+  status String
+  payload Json @db.JsonB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  saves SaveGame[]
+  @@index([ownerUserId, mode, updatedAt])
+}
+
+model SaveGame {
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceSessionId String
+  sourceSession WorldSession @relation(fields: [sourceSessionId], references: [id])
+  name String
+  scenarioName String
+  schemaVersion BigInt
+  turn BigInt
+  status String
+  checkpoint Json @db.JsonB
+  createdAt DateTime @default(now())
+  @@index([ownerUserId, createdAt])
+}
+
+model ProcessedRequest {
+  id String @id @default(uuid())
+  ownerUserId String
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  operation String
+  sourceId String
+  requestId String
+  inputHash String
+  result Json @db.JsonB
+  createdAt DateTime @default(now())
+  @@unique([ownerUserId, operation, sourceId, requestId])
+}
