@@ -31,4 +31,4 @@
 
 先读架构和技术方案，再按所属领域读专题及开发 note。一个规则只有一个规范来源，其他文档保留关联说明。完成状态依据实际功能与验收，已有 schema、表结构或 JSON 不能代替编辑器、身份或端到端完成证据。
 
-[AI Dungeon 研究](research/ai-dungeon-review.md)是额外参考，不是当前需求或域划分依据。
+[创作方式研究](research/scenario-authoring-review.md)为本轮编辑器交互方案提供来源；采纳边界维护在编辑器规范。[原 AI Dungeon 研究](research/ai-dungeon-review.md)中的其他候选仍为额外参考，不自动成为需求或域划分依据。
