@@ -5,4 +5,37 @@ body { margin: 0; background: #f4f5ef; color: #23372e; }
 .workshop .ant-layout-content { max-width: 1120px; width: 100%; margin: auto; padding: 64px 6vw; }
 .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
 .identity-card { max-width: 580px; }
-@media (max-width: 600px) { .cards { grid-template-columns: 1fr; } .workshop .ant-layout-content { padding-top: 32px; } }
+.draft-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.workspace-toolbar { margin-bottom: 20px; }
+.editor-workspace { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 24px; margin-top: 24px; }
+.editor-nav { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.editor-nav button { text-align: left; }
+.domain-editor { border: 0; margin: 0; padding: 0; min-width: 0; }
+.editor-control { display: flex; flex-direction: column; gap: 7px; margin: 14px 0; }
+.editor-control > span { font-size: 13px; color: #526759; }
+.editor-control .ant-select { min-width: 120px; max-width: 100%; }
+.condition { border-left: 2px solid #d5dfd3; margin: 12px 0; padding-left: 12px; min-width: 0; }
+.condition > .ant-select { width: 100%; margin-bottom: 10px; }
+.comparison { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.operand { flex: 1; min-width: 130px; }
+.release-row { display: flex; margin-bottom: 12px; }
+.scenario-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.scenario-grid .ant-card-body { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.scenario-grid .ant-typography { flex: 1; }
+.game-list-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-bottom: 1px solid #edf0e8; }
+.game-list-row:last-child { border-bottom: 0; }
+.game-list-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.game-summary { color: #657365; margin-top: 6px; }
+.game-save { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #edf0e8; }
+.decision-row { display: flex; flex-direction: column; gap: 5px; padding: 8px 0; }
+.history-turn { padding: 14px 0; border-bottom: 1px solid #edf0e8; }
+.history-turn:last-child { border-bottom: 0; }
+.history-turn h5 { margin-top: 0; }
+.game-panel .editor-control label { color: #526759; font-size: 13px; }
+.game-panel .ant-card-head-wrapper { flex-wrap: wrap; gap: 10px; }
+.workshop [hidden] { display: none !important; }
+.debug-view { max-height: 450px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #edf1e9; padding: 16px; }
+.domain-editor .ant-card-extra .ant-space { flex-wrap: wrap; justify-content: flex-end; }
+.domain-editor .ant-card-head { flex-wrap: wrap; }
+@media (max-width: 800px) { .editor-workspace { grid-template-columns: minmax(0, 1fr); } .editor-nav { flex-direction: row; flex-wrap: wrap; } }
+@media (max-width: 600px) { .cards, .scenario-grid { grid-template-columns: 1fr; } .workshop .ant-layout-content { padding-top: 32px; } .workshop .ant-layout-header { flex-wrap: wrap; gap: 12px; } }

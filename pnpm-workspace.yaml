@@ -9,3 +9,4 @@ allowBuilds:
   argon2: true
 saveExact: true
 strictPeerDependencies: true
+nodeLinker: hoisted

@@ -2,6 +2,7 @@ import ts from 'typescript';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const forbidden = new Set([
@@ -80,7 +81,8 @@ export function checkBoundaries() {
       if (!allowed.includes(name)) errors.push(pkg + ': 非白名单依赖 ' + name);
     }
     // Inspect the approved dependency's manifest too; new indirect dependencies require review.
-    const external = manifest(path.join(root, 'packages/contracts/node_modules/zod/package.json'));
+    const contractsRequire = createRequire(path.join(root, 'packages/contracts/package.json'));
+    const external = manifest(contractsRequire.resolve('zod/package.json'));
     if (Object.keys({ ...external.dependencies, ...external.optionalDependencies, ...external.peerDependencies }).length) errors.push('Zod 新增传递依赖，需要批准');
     for (const file of files(path.join(pkg, 'src'))) {
       for (const error of inspectSource(fs.readFileSync(file, 'utf8'), file, parsed.options)) errors.push(portable(path.relative(root, file)) + ':' + error.line + ' ' + error.message);

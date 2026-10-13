@@ -107,7 +107,35 @@ describe('通用世界引擎', () => {
   });
   it('零回合记忆窗口不会错误返回全部历史', () => {
     const s = ming(); s.simulation.memory_recent_turns = 0;
-    expect(playerView(advanceWorld(initializeWorld(s), 'wait', {})).records).toEqual([]);
+    const view = playerView(advanceWorld(initializeWorld(s), 'wait', {}));
+    expect(view.records).toEqual([]); expect(view.history.map(t => t.turn)).toEqual([1]);
+  });
+  it('完整可见历史独立于近期窗口，显示 NPC、事件与终局的名称', () => {
+    const s = station(); s.simulation.memory_recent_turns = 1;
+    let world = advanceWorld(initializeWorld(s), 'allocate', { amount: 20 });
+    world = advanceWorld(world, 'wait', {});
+    const view = playerView(world);
+    expect(view.records.map(t => t.turn)).toEqual([2]); expect(view.history.map(t => t.turn)).toEqual([1, 2]);
+    const npcAction = view.history.flatMap(t => t.decisions).find(d => d.actor_id === 'engineer')!;
+    expect(npcAction.actor_name).toBe('工程师'); expect(npcAction.name).toBe(s.actions.find(a => a.id === npcAction.id)!.name);
+    expect(view.ending).toEqual({ id: world.terminal_objective_id, name: s.objectives.find(o => o.id === world.terminal_objective_id)!.name, outcome: 'success' });
+    expect(view.history.at(-1)!.decisions.some(d => d.kind === 'objective' && d.name === view.ending!.name)).toBe(true);
+    expect(JSON.stringify(view)).not.toMatch(/conditions|effects|reason/);
+  });
+  it('历史、实体标签与终局都先经过玩家权限过滤', () => {
+    const s = station(); s.simulation.npc_order = []; s.simulation.npc_actions = {};
+    s.entities.locations = [{ id: 'public_site', name: '公开值班室', description: '' }, { id: 'secret_site', name: '秘密地点名称', description: '秘密描述' }];
+    s.state_schema.push({ key: 'location', label: '位置', type: 'entity_ref', allowed_entity_ids: ['public_site'], owner_id: null, visibility: 'public' },
+      { key: 'hidden_location', label: '隐藏位置', type: 'entity_ref', allowed_entity_ids: ['secret_site'], owner_id: 'engineer', visibility: ['engineer'] });
+    s.initial_state.values.location = 'public_site'; s.initial_state.values.hidden_location = 'secret_site';
+    s.events = [{ id: 'private_event', name: '秘密事件名称', conditions: { all: [] }, effects: [], repeatable: false, visibility: ['engineer'] },
+      { id: 'public_event', name: '公开信号', conditions: { all: [] }, effects: [{ type: 'set', field: 'hidden_location', value: { literal: 'secret_site' } }], repeatable: false, visibility: 'public' }];
+    s.objectives = [{ id: 'private_ending', name: '秘密结局名称', outcome: 'success', priority: 0, conditions: { all: [] }, visibility: ['engineer'] }];
+    const view = playerView(advanceWorld(initializeWorld(s), 'wait', {}));
+    expect(view.entities).toEqual([{ id: 'public_site', name: '公开值班室' }]);
+    expect(view.history[0]!.decisions.find(d => d.id === 'public_event')).toMatchObject({ name: '公开信号', changes: [] });
+    expect(view.status).toBe('success'); expect(view.ending).toBeNull();
+    expect(JSON.stringify(view)).not.toMatch(/秘密|secret_site|private_event|private_ending|hidden_location/);
   });
   it('all/any/not 与候选回合语义', () => {
     expect(evaluate({ all: [] }, {}, {}, 1)).toBe(true);

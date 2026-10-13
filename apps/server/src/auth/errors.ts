@@ -3,7 +3,7 @@ import type { Response } from 'express';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string,
-    public readonly retryAfter?: number) { super(message); }
+    public readonly retryAfter?: number, public readonly details: unknown[] = []) { super(message); }
 }
 @Catch()
 export class ApiErrorFilter implements ExceptionFilter {
@@ -18,6 +18,6 @@ export class ApiErrorFilter implements ExceptionFilter {
       : new ApiError(500, 'internal_error', '服务暂时不可用，请稍后重试');
     response.setHeader('Cache-Control', 'no-store');
     if (failure.retryAfter) response.setHeader('Retry-After', failure.retryAfter);
-    response.status(failure.status).json({ error: { code: failure.code, message: failure.message, details: [] } });
+    response.status(failure.status).json({ error: { code: failure.code, message: failure.message, details: failure.details } });
   }
 }

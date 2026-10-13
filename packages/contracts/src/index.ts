@@ -1,4 +1,7 @@
 import { z } from 'zod';
+export * from './authoring.js';
+export * from './references.js';
+export * from './partial-shape.js';
 export { credentialsSchema, userSummarySchema } from './auth.js';
 export type { UserSummary, IdentityChange } from './auth.js';
 
@@ -86,7 +89,7 @@ export type Parameter = z.infer<typeof parameterSchema>;
 export type Effect = z.infer<typeof effectSchema>;
 export type Action = z.infer<typeof actionSchema>;
 export type Audience = z.infer<typeof audienceSchema>;
-export interface Issue { severity: 'error'; definition_path: string; message: string }
+export interface Issue { severity: 'error'; definition_path: string; message: string; object_id?: string }
 export interface Change { field: string; before: Scalar; after: Scalar }
 export interface Decision {
   kind: 'action' | 'event' | 'objective';
@@ -94,6 +97,18 @@ export interface Decision {
   audience: Audience; changes: Change[];
 }
 export interface TurnRecord { turn: number; decisions: Decision[] }
+export interface PlayerTurn {
+  turn: number;
+  decisions: { kind: Decision['kind']; id: string; name: string; actor_id: string | null; actor_name: string | null; changes: Change[] }[];
+}
+export interface PlayerView {
+  scenario_id: string; name: string; turn: number; status: 'active' | 'success' | 'failure'; opening: string;
+  fields: { key: string; label: string; type: Field['type']; value: Scalar; unit: string | null }[];
+  memories: { id: string; text: string }[];
+  records: PlayerTurn[]; history: PlayerTurn[]; entities: { id: string; name: string }[];
+  ending: { id: string; name: string; outcome: 'success' | 'failure' } | null;
+  actions: { id: string; name: string; description: string; parameters: Record<string, Parameter> }[];
+}
 export interface World {
   schemaVersion: 1; scenario_snapshot: Scenario; turn: number;
   status: 'active' | 'success' | 'failure'; values: Record<string, Scalar>;
@@ -113,3 +128,98 @@ export const worldSchema = z.strictObject({
     })),
   })),
 });
+
+export const checkpointSchema = worldSchema.extend({
+  scenario_id: id, known_records: z.record(id, z.array(z.string().min(1))),
+  turns: z.array(worldSchema.shape.turns.element.extend({
+    session_id: requestIdText(), request_id: requestIdText(),
+    input: z.strictObject({ action_id: id, parameters: z.record(id, scalarSchema) }),
+  })),
+});
+function requestIdText() { return z.string().min(1).max(120); }
+export type Checkpoint = z.infer<typeof checkpointSchema>;
+
+export type DraftDocument = Record<string, unknown>;
+export const requestIdSchema = z.string().min(1).max(120);
+export const revisionSchema = safeInteger.nonnegative();
+export const createDraftSchema = z.strictObject({
+  name: z.string().min(1).max(120), request_id: requestIdSchema,
+  source: z.discriminatedUnion('type', [
+    z.strictObject({ type: z.literal('blank') }),
+    z.strictObject({ type: z.literal('template'), template_id: requestIdSchema }),
+    z.strictObject({ type: z.literal('release'), release_id: requestIdSchema }),
+  ]),
+});
+export const saveDraftSchema = z.strictObject({ 'document': draftSchema, expected_revision: revisionSchema, request_id: requestIdSchema });
+export const importDraftSchema = z.strictObject({ 'document': draftSchema, request_id: requestIdSchema });
+export const atRevisionSchema = z.strictObject({ expected_revision: revisionSchema });
+export const createAtRevisionSchema = atRevisionSchema.extend({ request_id: requestIdSchema });
+export const createWorldSchema = z.union([
+  z.strictObject({ release_id: requestIdSchema, request_id: requestIdSchema }),
+  z.strictObject({ template_id: id, request_id: requestIdSchema }),
+]);
+export const turnInputSchema = z.strictObject({ action_id: id, parameters: z.record(id, scalarSchema), expected_revision: revisionSchema, request_id: requestIdSchema });
+export const saveGameSchema = createAtRevisionSchema.extend({ name: z.string().min(1).max(120) });
+export const restoreSaveSchema = z.strictObject({ request_id: requestIdSchema });
+export interface DraftSummary { draft_id: string; name: string; revision: number; updated_at: string }
+export interface DraftView extends DraftSummary { 'document': DraftDocument }
+export interface ReleaseSummary { release_id: string; name: string; source_revision: number; created_at: string }
+export interface ReleaseView extends ReleaseSummary { definition: Scenario }
+export interface Validation { valid: boolean; issues: Issue[] }
+export const collectionSchema = z.enum(['metadata', 'world', 'player', 'narrative', 'simulation', 'characters', 'factions', 'locations', 'fields', 'memories', 'actions', 'events', 'objectives']);
+export const targetSchema = z.strictObject({ collection: collectionSchema, key: id.nullable() });
+export type Target = z.infer<typeof targetSchema>;
+export const outlineSchema = z.strictObject({
+  kind: z.literal('outline'), premise: text, player: text, characters: z.array(text), conflicts: z.array(text),
+  event_directions: z.array(text), gameplay: z.array(text), ending_directions: z.array(text),
+});
+export type OutlineProposal = z.infer<typeof outlineSchema>;
+export interface ProposalChange { change_id: string; target: Target; operation: 'add' | 'update' | 'delete' | 'reorder'; before: unknown; after: unknown }
+export interface ProposalGroup { group_id: string; label: string; change_ids: string[]; requires: string[] }
+export interface DetailProposal { kind: 'detail'; 'document': DraftDocument; changes: ProposalChange[]; groups: ProposalGroup[]; validation: Validation }
+const detailSchema = z.strictObject({ kind: z.literal('detail'), 'document': draftSchema,
+  changes: z.array(z.strictObject({ change_id: id, target: targetSchema, operation: z.enum(['add', 'update', 'delete', 'reorder']), before: z.unknown(), after: z.unknown() })),
+  groups: z.array(z.strictObject({ group_id: id, label: text, change_ids: z.array(id), requires: z.array(id) })),
+  validation: z.strictObject({ valid: z.boolean(), issues: z.array(z.strictObject({ severity: z.literal('error'), definition_path: text, message: text, object_id: id.optional() })) }),
+});
+export const generationInputSchema = z.strictObject({
+  generation_id: requestIdSchema, expected_revision: revisionSchema, workspace_id: requestIdSchema,
+  content_version: revisionSchema, proposal_version: revisionSchema, stage: z.enum(['outline', 'detail', 'revise']),
+  instruction: z.string().refine(value => value.trim().length > 0 && [...value].length <= 8000, '描述需要 1–8000 个字符'),
+  'document': draftSchema, proposal: z.union([outlineSchema, detailSchema]).nullable(),
+  edit_scope: z.strictObject({ mode: z.enum(['extend', 'revise']), targets: z.array(targetSchema) }),
+}).superRefine((value, context) => {
+  if (value.stage === 'detail' && value.proposal?.kind !== 'outline' || value.stage === 'outline' && value.proposal?.kind === 'detail' ||
+    value.stage === 'revise' && value.proposal?.kind === 'outline') context.addIssue({ code: 'custom', message: '生成阶段与候选类型不匹配' });
+  if (value.edit_scope.mode === 'extend' ? value.edit_scope.targets.length !== 0 : value.edit_scope.targets.length === 0) {
+    context.addIssue({ code: 'custom', message: '请选择此次改写范围' });
+  }
+});
+export type GenerationInput = z.infer<typeof generationInputSchema>;
+export interface GenerationResult {
+  source: Pick<GenerationInput, 'generation_id' | 'expected_revision' | 'workspace_id' | 'content_version' | 'proposal_version'> & {
+    draft_id: string; document_digest: string; proposal_digest: string;
+  };
+  candidate_id: string; candidate: OutlineProposal | DetailProposal; assumptions: string[]; questions: string[];
+  usage: { input_tokens: number | null; output_tokens: number | null };
+}
+export function emptyScenario(name: string, scenarioId: string): Scenario {
+  return { metadata: { id: scenarioId, name, description: '' }, world: { background: '', start_time: '', turn_unit: '', constraints: [] },
+    entities: { characters: [], factions: [], locations: [] }, player: { character_id: '' }, state_schema: [],
+    initial_state: { values: {}, memories: [] }, actions: [], simulation: { npc_order: [], npc_actions: {}, memory_recent_turns: 5 },
+    events: [], objectives: [], narrative: { opening: '', style: '', perspective: '' } };
+}
+export function draftWithinLimits(input: unknown): boolean {
+  const pending = [{ value: input, depth: 0 }]; let nodes = 0;
+  while (pending.length) {
+    const item = pending.pop()!;
+    if (++nodes > 20000 || item.depth > 48) return false;
+    if (item.value && typeof item.value === 'object') {
+      for (const [key, value] of Object.entries(item.value)) {
+        if (['__proto__', 'constructor', 'prototype'].includes(key)) return false;
+        pending.push({ value, depth: item.depth + 1 });
+      }
+    }
+  }
+  return true;
+}

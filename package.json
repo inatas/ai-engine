@@ -9,7 +9,7 @@
     "build": "pnpm -r build",
     "check": "eslint . && node scripts/check-boundaries.mjs && pnpm -r typecheck",
     "test": "vitest run && pnpm test:auth",
-    "test:auth": "pnpm --filter @ai-engine/contracts build && pnpm --filter @ai-engine/server build && node scripts/test-auth.mjs",
+    "test:auth": "pnpm --filter @ai-engine/contracts build && pnpm --filter @ai-engine/engine build && pnpm --filter @ai-engine/server build && node scripts/test-auth.mjs",
     "db:up": "docker compose up -d --wait",
     "db:generate": "pnpm --filter @ai-engine/server db:generate",
     "db:push": "pnpm --filter @ai-engine/server db:push",

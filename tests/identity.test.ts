@@ -36,3 +36,13 @@ it('退出由服务端确认后发身份事件；失败不报告成功，不写�
   expect(changes).toEqual([{ user_id: 'one', username: 'captain' }, null]);
   expect(fetcher.mock.calls[2]![1].headers['X-CSRF-Token']).toBe('session');
 });
+it('刷新检测到另一账号后，迟到的私人业务响应被丢弃', async () => {
+  let finish!: (response: Response) => void;
+  const delayed = new Promise<Response>(resolve => { finish = resolve; });
+  let username = 'one';
+  const fetcher = vi.fn((url: string) => url.endsWith('/drafts/private') ? delayed : Promise.resolve(url.endsWith('/me') ? reply({ user_id: username, username }) : reply({ csrf_token: 'test-token' })));
+  vi.stubGlobal('fetch', fetcher);
+  const identity = await fixture(); await identity.refreshIdentity();
+  const pending = identity.api('drafts/private'); username = 'two'; await identity.refreshIdentity();
+  finish(reply({ document: 'private-to-one' })); await expect(pending).rejects.toMatchObject({ code: 'identity_changed' });
+});

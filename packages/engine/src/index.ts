@@ -1,4 +1,4 @@
-import type { Scenario, Scalar, Operand, Condition, Effect, World, Decision, Change, Audience } from '@ai-engine/contracts';
+import type { Scenario, Scalar, Operand, Condition, Effect, World, Decision, Change, Audience, PlayerView, PlayerTurn } from '@ai-engine/contracts';
 import { validateScenario, valueValid, parametersValid, validateWorld } from './validate.js';
 export { validateScenario, validateWorld } from './validate.js';
 
@@ -116,25 +116,39 @@ export function advanceWorld(original: World, actionId: string, parameters: Reco
   return world;
 }
 function visible(a: Audience, actor: string): boolean { return a === 'public' || a.includes(actor); }
-export function playerView(world: World) {
+export function playerView(world: World): PlayerView {
   const s = world.scenario_snapshot, actor = s.player.character_id;
   const fields = s.state_schema.filter(f => visible(f.visibility, actor));
   const visibleFields = new Set(fields.map(f => f.key));
-  const recent = s.simulation.memory_recent_turns === 0 ? [] : world.turns.slice(-s.simulation.memory_recent_turns);
+  const entityNames = new Map([...s.entities.characters, ...s.entities.factions, ...s.entities.locations].map(entity => [entity.id, entity.name]));
+  const history: PlayerTurn[] = world.turns.map(t => ({ turn: t.turn,
+    decisions: t.decisions.filter(d => visible(d.audience, actor) && d.accepted).map(d => ({
+      kind: d.kind, id: d.id,
+      name: (d.kind === 'action' ? s.actions : d.kind === 'event' ? s.events : s.objectives).find(item => item.id === d.id)!.name,
+      actor_id: d.actor_id, actor_name: d.actor_id === null ? null : entityNames.get(d.actor_id)!,
+      changes: d.changes.filter(c => visibleFields.has(c.field)),
+    })),
+  }));
+  const actions = s.actions.filter(a => a.allowed_actor_ids.includes(actor)).map(a => ({ id: a.id, name: a.name, description: a.description, parameters: a.parameters }));
+  const referenced = new Set<string>();
+  for (const field of fields.filter(f => f.type === 'entity_ref')) {
+    referenced.add(world.values[field.key] as string);
+    for (const record of history) for (const decision of record.decisions) for (const change of decision.changes) {
+      if (change.field === field.key) { referenced.add(change.before as string); referenced.add(change.after as string); }
+    }
+  }
+  for (const action of actions) for (const parameter of Object.values(action.parameters)) {
+    if (parameter.type === 'entity_ref') for (const id of parameter.allowed_entity_ids) referenced.add(id);
+  }
+  const ending = s.objectives.find(o => o.id === world.terminal_objective_id && visible(o.visibility, actor));
   return {
     scenario_id: s.metadata.id, name: s.metadata.name, turn: world.turn, status: world.status,
     opening: s.narrative.opening,
-    fields: fields.map(f => ({ key: f.key, label: f.label, value: world.values[f.key], unit: f.type === 'integer' ? f.unit : null })),
+    fields: fields.map(f => ({ key: f.key, label: f.label, type: f.type, value: world.values[f.key]!, unit: f.type === 'integer' ? f.unit : null })),
     memories: s.initial_state.memories.filter(m => visible(m.audience, actor)).map(m => ({ id: m.id, text: m.text })),
-    records: recent.map(t => ({
-      turn: t.turn,
-      decisions: t.decisions.filter(d => visible(d.audience, actor) && d.accepted).map(d => ({
-        kind: d.kind, id: d.id, actor_id: d.actor_id,
-        changes: d.changes.filter(c => visibleFields.has(c.field)),
-      })),
-    })),
-    actions: s.actions.filter(a => a.allowed_actor_ids.includes(actor)).map(a => ({
-      id: a.id, name: a.name, description: a.description, parameters: a.parameters,
-    })),
+    records: s.simulation.memory_recent_turns === 0 ? [] : history.slice(-s.simulation.memory_recent_turns),
+    history, actions,
+    entities: [...referenced].map(id => ({ id, name: entityNames.get(id)! })),
+    ending: ending ? { id: ending.id, name: ending.name, outcome: ending.outcome } : null,
   };
 }

@@ -1,11 +1,14 @@
 import React from 'react';
+import '@ant-design/v5-patch-for-react-19';
 import { createRoot } from 'react-dom/client';
-import { Alert, Button, Card, ConfigProvider, Form, Input, Layout, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, ConfigProvider, Form, Input, Layout, Space, Tabs, Tag, Typography } from 'antd';
 import { credentialsSchema, type IdentityChange, type UserSummary } from '@ai-engine/contracts';
 import { identityEvent, logout, refreshIdentity, RequestError, submitCredentials } from './identity.js';
 import zhCN from 'antd/locale/zh_CN';
 import 'antd/dist/reset.css';
 import './style.css';
+import { Workshop } from './workshop.js';
+import { Play } from './play.js';
 
 function App() {
   const [status, setStatus] = React.useState('正在连接');
@@ -13,6 +16,9 @@ function App() {
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [mode, setMode] = React.useState<'login' | 'register'>('login');
+  const [view, setView] = React.useState('play'), [creatorOpened, setCreatorOpened] = React.useState(false);
+  const openCreate = () => { setCreatorOpened(true); setView('create'); };
+  React.useEffect(() => { setView('play'); }, [user?.user_id]);
   const [feedback, setFeedback] = React.useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [form] = Form.useForm<{ username: string; password: string }>();
   const report = (error: unknown) => setFeedback({ type: 'error', text: error instanceof RequestError
@@ -65,16 +71,14 @@ function App() {
   }, []);
   return <ConfigProvider locale={zhCN} theme={{ token: { colorPrimary: '#315f4d', borderRadius: 10 } }}>
     <Layout className="workshop">
-      <Layout.Header><Typography.Title level={3}>世界工坊</Typography.Title><Tag>{status}</Tag></Layout.Header>
+      <Layout.Header><Typography.Title level={3}>AI Engine</Typography.Title><Space wrap><Tag>{status}</Tag>{user && <><Typography.Text>{user.username}</Typography.Text><Button onClick={() => { void signOut(); }} loading={busy}>退出登录</Button></>}</Space></Layout.Header>
       <Layout.Content>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <div><Typography.Title>从规则开始，构建你的世界</Typography.Title>
-            <Typography.Paragraph>定义角色、局势和行动，让同一套引擎运行不同的故事。</Typography.Paragraph></div>
-          <Card className="identity-card" title={user ? '当前账号' : mode === 'login' ? '登录世界工坊' : '创建账号'} loading={loading}>
+          <div><Typography.Title>{user && view === 'create' ? '创作你的剧本' : '进入故事，开始你的冒险'}</Typography.Title>
+            <Typography.Paragraph>{user && view === 'create' ? '定义世界与角色，编辑、生成并试玩你的故事。' : '选择一个剧本开始游玩，随时保存进度，继续你的故事。'}</Typography.Paragraph></div>
+          {!user && <Card className="identity-card" title={mode === 'login' ? '登录后开始游玩' : '创建账号'} loading={loading}>
             {feedback && <Alert type={feedback.type} showIcon message={feedback.text} role="status" style={{ marginBottom: 20 }} />}
-            {user ? <Space wrap><Typography.Text>已登录：<strong>{user.username}</strong></Typography.Text>
-              <Button onClick={() => { void signOut(); }} loading={busy}>退出登录</Button></Space>
-              : <Form form={form} layout="vertical" onFinish={values => { void submit(values); }} disabled={busy} requiredMark={false}>
+            <Form form={form} layout="vertical" onFinish={values => { void submit(values); }} disabled={busy} requiredMark={false}>
                 <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}>
                   <Input autoComplete="username" maxLength={32} placeholder="3–32 个字母、数字或下划线" />
                 </Form.Item>
@@ -85,13 +89,11 @@ function App() {
                   <Button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setFeedback(null); form.setFieldValue('password', ''); }}>
                     {mode === 'login' ? '创建账号' : '已有账号，去登录'}
                   </Button><Button type="text" onClick={() => { setFeedback(null); void refresh(); }}>刷新登录状态</Button></Space>
-              </Form>}
-          </Card>
-          <Alert type="info" showIcon message="账号功能已开放" description="可以注册、登录并在刷新后保持身份。剧本编辑和个人存档正在后续开发中。" />
-          <div className="cards">
-            <Card title="大明末年危局"><p>调拨军饷，在十二回合的危局中保住北京。</p><Tag>规则验证示例</Tag></Card>
-            <Card title="空间站维修"><p>分配能源，由工程师修复受损的空间站。</p><Tag>通用性验证示例</Tag></Card>
-          </div>
+              </Form>
+          </Card>}
+          {user && <Tabs activeKey={view} onChange={value => { if (value === 'create') openCreate(); else setView('play'); }} items={[{ key: 'play', label: '玩剧本' }, { key: 'create', label: '创作' }]} />}
+          <div hidden={!user || view !== 'play'}><Play key={user?.user_id ?? 'anonymous'} user={user} active={view === 'play'} onCreate={openCreate} /></div>
+          {creatorOpened && <div hidden={view !== 'create'}><Workshop user={user} onPlay={() => setView('play')} /></div>}
         </Space>
       </Layout.Content>
     </Layout>

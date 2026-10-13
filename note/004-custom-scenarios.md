@@ -2,6 +2,7 @@
 
 状态：**设计待用户确认，依赖 003；编辑器示例尚未制作**。
 依据：[具体示例与制作路径](../docs/custom-scenarios.md)、[编辑器](../docs/scenario-editor.md)。
+联合运行依据：[DSL](../docs/scenario-schema.md)、[身份与访问](../docs/auth-and-ownership.md)、[运行机制](../docs/runtime.md)、[个人存档](../docs/personal-saves.md)。
 前置：003 的领域编辑／保存／校验／试玩／定稿／导出，002 的真实账号，001 的运行服务及用于联合验收的存档能力。
 
 ## 1. 目标与范围纠正

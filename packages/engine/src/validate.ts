@@ -1,4 +1,4 @@
-import { scenarioSchema } from '@ai-engine/contracts';
+import { scenarioSchema, atPath, collectionPaths, itemKey } from '@ai-engine/contracts';
 import type { Scenario, Issue, Field, Parameter, Scalar, Operand, Condition, Effect, Audience, World } from '@ai-engine/contracts';
 
 export function valueValid(declaration: Parameter | Field, value: unknown): value is Scalar {
@@ -27,16 +27,27 @@ function withinLimits(input: unknown): boolean {
   return true;
 }
 export function validateScenario(input: unknown): { valid: boolean; issues: Issue[]; definition?: Scenario } {
+  const identities = (issues: Issue[]): Issue[] => issues.map(issue => {
+    const parts = issue.definition_path.split('/').slice(1).map(part => part.replaceAll('~1', '/').replaceAll('~0', '~'));
+    for (const [collection, path] of Object.entries(collectionPaths)) {
+      if (!path.every((part, index) => parts[index] === part)) continue;
+      const values = atPath(input, path);
+      if (!Array.isArray(values)) continue;
+      const id = itemKey(values[Number(parts[path.length])], collection);
+      if (id) return { ...issue, object_id: id };
+    }
+    return issue;
+  });
   if (!withinLimits(input)) return { valid: false, issues: [{ severity: 'error', definition_path: '/', message: '定义超过深度或节点限制' }] };
   const parsed = scenarioSchema.safeParse(input);
   if (!parsed.success) {
     const pointer = (parts: PropertyKey[]) => '/' + parts.map(part => String(part).replaceAll('~', '~0').replaceAll('/', '~1')).join('/');
     return {
-      valid: false, issues: parsed.error.issues.flatMap(issue =>
+      valid: false, issues: identities(parsed.error.issues.flatMap(issue =>
         issue.code === 'unrecognized_keys'
           ? issue.keys.map(key => ({ severity: 'error' as const, definition_path: pointer([...issue.path, key]), message: '未知字段' }))
           : [{ severity: 'error' as const, definition_path: pointer(issue.path), message: issue.message }],
-      ),
+      )),
     };
   }
   const s = parsed.data;
@@ -52,7 +63,11 @@ export function validateScenario(input: unknown): { valid: boolean; issues: Issu
     const seen = new Set<string>();
     values.forEach((value, index) => { if (seen.has(value)) error(path + '/' + index, '重复标识：' + value); seen.add(value); });
   }
-  unique(entities.map(x => x.id), '/entities');
+  const seenEntities = new Set<string>();
+  for (const kind of ['characters', 'factions', 'locations'] as const) s.entities[kind].forEach((entity, index) => {
+    if (seenEntities.has(entity.id)) error(`/entities/${kind}/${index}/id`, '重复标识：' + entity.id);
+    seenEntities.add(entity.id);
+  });
   unique(s.state_schema.map(x => x.key), '/state_schema');
   unique(s.actions.map(x => x.id), '/actions');
   unique(s.events.map(x => x.id), '/events');
@@ -152,7 +167,7 @@ export function validateScenario(input: unknown): { valid: boolean; issues: Issu
     const p = '/objectives/' + i;
     audience(o.visibility, p + '/visibility'); condition(o.conditions, {}, p + '/conditions');
   });
-  return issues.length ? { valid: false, issues } : { valid: true, issues, definition: s };
+  return issues.length ? { valid: false, issues: identities(issues) } : { valid: true, issues, definition: s };
 }
 
 export function validateWorld(world: World): boolean {

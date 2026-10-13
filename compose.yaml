@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ai_engine_local
       POSTGRES_DB: ai_engine
     ports:
-      - "127.0.0.1:55432:5432"
+      - "127.0.0.1:${AI_ENGINE_DB_PORT:-55433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

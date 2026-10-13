@@ -124,3 +124,17 @@ model ProcessedRequest {
   createdAt DateTime @default(now())
   @@unique([ownerUserId, operation, sourceId, requestId])
 }
+
+// Authoring call leases and rate windows; candidates remain in browser memory.
+model AuthorGenerationLease {
+  ownerUserId String @id
+  token String
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+model AuthorGenerationRate {
+  ownerUserId String @id
+  attempts DateTime[]
+  expiresAt DateTime
+}

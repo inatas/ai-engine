@@ -6,7 +6,24 @@ let identityRevision = 0;
 export const identityEvent = 'ai-engine:identity-change';
 const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('ai-engine-identity');
 export class RequestError extends Error {
-  constructor(public status: number, public code: string, message: string, public retryAfter?: number) { super(message); }
+  constructor(public status: number, public code: string, message: string, public retryAfter?: number, public details: unknown[] = []) { super(message); }
+}
+export async function api<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
+  const revision = identityRevision;
+  if (method !== 'GET' && !csrf) await initializeCsrf();
+  if (revision !== identityRevision) throw new RequestError(409, 'identity_changed', '账号已经变化，请重新打开工作区');
+  const response = await fetch(`/api/${path}`, { method, credentials: 'same-origin', cache: 'no-store',
+    headers: method === 'GET' ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf ?? '' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }), ...(signal ? { signal } : {}) });
+  const result = await response.json() as { data?: T; error?: { code: string; message: string; details?: unknown[] } };
+  if (revision !== identityRevision) throw new RequestError(409, 'identity_changed', '账号已经变化，响应已丢弃');
+  if (!response.ok) {
+    if (response.status === 401) { identityRevision++; csrf = null; changed(null); }
+    if (result.error?.code === 'csrf_failed' || result.error?.code === 'auth_context_changed') csrf = null;
+    throw new RequestError(response.status, result.error?.code ?? 'internal_error', result.error?.message ?? '请求失败',
+      Number(response.headers.get('Retry-After')) || undefined, result.error?.details ?? []);
+  }
+  return result.data!;
 }
 async function request<T>(path: string, body?: unknown): Promise<T> {
   const revision = identityRevision;
@@ -30,6 +47,7 @@ function changed(next: UserSummary | null) {
   const previous = current;
   current = next;
   if (previous?.user_id !== next?.user_id) {
+    identityRevision++;
     window.dispatchEvent(new CustomEvent<IdentityChange>(identityEvent, { detail: { previous, current } }));
   }
 }
