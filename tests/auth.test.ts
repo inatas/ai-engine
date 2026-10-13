@@ -90,17 +90,26 @@ describe('配置和输入政策', () => {
   });
   it('密码按码点计数，不修剪、不截断，不接受单独代理项或身份字段', () => {
     const parse = (value: string) => credentialsSchema.safeParse({ username: 'Abc', password: value });
-    expect(parse('🌍'.repeat(15)).success).toBe(true);
+    expect(parse('🌍'.repeat(6)).success).toBe(true);
+    expect(parse('abcXYZ').success).toBe(true);
     expect(parse('🌍'.repeat(128)).success).toBe(true);
     expect(parse('🌍'.repeat(129)).success).toBe(false);
-    expect(parse('🌍'.repeat(14)).success).toBe(false);
-    expect(parse(' '.repeat(15)).success).toBe(true);
-    expect(parse(' '.repeat(14) + '\ud800').success).toBe(false);
+    expect(parse('🌍'.repeat(5)).success).toBe(false);
+    expect(parse('abcXY').success).toBe(false);
+    expect(parse(' '.repeat(6)).success).toBe(true);
+    expect(parse(' '.repeat(5) + '\ud800').success).toBe(false);
     expect(credentialsSchema.safeParse({ username: ' abc', password }).success).toBe(false);
     expect(credentialsSchema.safeParse({ username: 'abc', password, owner_user_id: 'other' }).success).toBe(false);
   });
 });
 describe('真实注册与登录', () => {
+  it('六个 Unicode 字符可注册登录，五个字符拒绝', async () => {
+    const a = new Browser(); await a.initialize();
+    expect((await a.register('shortpass', '🌍清风远航夜')).response.status).toBe(201);
+    expect((await a.login('shortpass', '🌍清风远航夜')).response.status).toBe(200);
+    const b = new Browser(); await b.initialize();
+    expect((await b.register('toosmall', '🌍清风远航')).response.status).toBe(422);
+  });
   it('用户名规范化且注册不自动登录，并发唯一约束只建立一个账号', async () => {
     const a = new Browser(), b = new Browser();
     await a.initialize(); await b.initialize();
@@ -125,7 +134,7 @@ describe('真实注册与登录', () => {
   });
   it('拒绝本地常见密码清单中的有效长度密码，不建立账号', async () => {
     const common = readFileSync(new URL('../apps/server/resources/common-passwords.txt', import.meta.url), 'utf8')
-      .split(/\r?\n/).find(value => [...value].length >= 15 && [...value].length <= 128)!;
+      .split(/\r?\n/).find(value => [...value].length >= 6 && [...value].length <= 128)!;
     expect(common).toBeTruthy();
     const a = new Browser(); await a.initialize();
     expect((await a.register('weakpass', common)).body.error!.code).toBe('invalid_request');

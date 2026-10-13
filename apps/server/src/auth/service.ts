@@ -151,7 +151,7 @@ export class AuthService {
   private credentials(body: unknown) {
     const result = credentialsSchema.safeParse(body);
     if (!result.success || Buffer.byteLength(result.data.password, 'utf8') > 512) {
-      throw new ApiError(422, 'invalid_request', '用户名须为 3–32 个字母、数字或下划线，密码须为 15–128 个 Unicode 字符');
+      throw new ApiError(422, 'invalid_request', '用户名须为 3–32 个字母、数字或下划线，密码须为 6–128 个 Unicode 字符');
     }
     return result.data;
   }

@@ -39,7 +39,7 @@ function App() {
   }, []);
   const submit = async (values: { username: string; password: string }) => {
     const parsed = credentialsSchema.safeParse(values);
-    if (!parsed.success) { setFeedback({ type: 'error', text: '用户名须为 3–32 个字母、数字或下划线；密码须为 15–128 个 Unicode 字符。' }); return; }
+    if (!parsed.success) { setFeedback({ type: 'error', text: '用户名须为 3–32 个字母、数字或下划线；密码须为 6–128 个 Unicode 字符。' }); return; }
     setBusy(true); setFeedback(null);
     try {
       const result = await submitCredentials(mode, values);
@@ -83,7 +83,7 @@ function App() {
                   <Input autoComplete="username" maxLength={32} placeholder="3–32 个字母、数字或下划线" />
                 </Form.Item>
                 <Form.Item label="密码" name="password" rules={[{ required: true, message: '请输入密码' }]}>
-                  <Input.Password autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder="15–128 个字符，支持空格和中文" />
+                  <Input.Password autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder="6–128 个字符，支持空格和中文" />
                 </Form.Item>
                 <Space wrap><Button type="primary" htmlType="submit" loading={busy}>{mode === 'login' ? '登录' : '注册'}</Button>
                   <Button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setFeedback(null); form.setFieldValue('password', ''); }}>
