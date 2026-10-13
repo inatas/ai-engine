@@ -70,6 +70,10 @@ stage 为 outline／detail／revise；proposal 为 null 或与 stage 匹配的�
 
 ## 4. 世界与个人存档接口
 
+本节表格是已实现动作式回合接口。[回合、场景与分支](turn-flow.md)要求后续区分场景内互动与结束回合，并让 PlayerView 提供当前剧情节点／实例、推进模式、每回合开篇、已完成交流、可用互动与结束按钮状态。过渡节点只返回结束操作，私有记忆和内部事实不进入玩家响应。
+
+新写请求必须绑定 session_id、当前节点实例、expected_revision 和 request_id，互动提交与结束提交使用不同操作类型；重复请求不得再次生成已完成交流、执行效果或推进。场景内互动增加 revision 而不增加 turn，action 模式仍自动结束。新增路径、模型请求生命周期与精确 DTO 在实施前固定，本表的 /turns 不应被当作所有新操作已可用的入口。
+
 | 方法与路径 | 输入 | 成功结果 |
 | --- | --- | --- |
 | GET /api/world-sessions | 分页参数；mode 默认 play | 本人当前游戏概要、schemaVersion、loadable；显式 mode=preview 可查看本人试玩 |
