@@ -18,6 +18,8 @@
 | [api-contract.md](api-contract.md) | HTTP 接口形状、通用响应、请求去重和冲突语义 |
 | [custom-scenarios.md](custom-scenarios.md) | 基于编辑器制作的大明与空间站示例内容、操作路径及验收 |
 
+题材故事草案：[cyberpunk 2077 场景故事稿](scenarios/cyberpunk-2077-scene-story.md)维护场景正文、多轮对话与行动、结束 turn 的理由及分支；[故事概览](scenarios/cyberpunk-2077-story.md)维护背景、原作资料与结局方向。意识纠缠之前为固定走向的序章，之后为开放主线，尚未制作最终模板。
+
 ## 2. 阅读顺序与主题依赖
 
 先读架构与技术方案，再按职责进入专题：
